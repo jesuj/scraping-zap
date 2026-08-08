@@ -1,0 +1,60 @@
+{
+  "$comment": "Configuracion unica del sistema. Agregar una tienda VTEX = agregar un objeto en 'stores'. No hace falta tocar codigo.",
+
+  "targetSizes": {
+    "$comment": "Tallas que te interesan, en la escala que usan las tiendas (US hombre). El pie declarado es de 30 cm.",
+    "system": "US_MEN",
+    "labels": ["11", "11.5", "12"],
+    "footLengthCm": 30
+  },
+
+  "scrape": {
+    "$comment": "Se guardan TODOS los SKUs de las tallas objetivo (con y sin stock) para que el historial de precios tenga sentido. El filtro de stock se aplica al mostrar.",
+    "pageSize": 50,
+    "concurrency": 4,
+    "minDelayMs": 120,
+    "requestTimeoutMs": 30000,
+    "maxRetries": 4,
+    "userAgent": "scraping-zap/1.0 (uso personal; contacto: cambiar-por-tu-email)"
+  },
+
+  "stores": [
+    {
+      "slug": "fairplay",
+      "name": "Fair Play",
+      "enabled": true,
+      "platform": "vtex",
+      "baseUrl": "https://www.fairplay.com.bo",
+      "currency": "BOB",
+      "vtex": {
+        "sizeSpecificationId": 57,
+        "sizeFieldName": "TALLA",
+        "categories": [
+          { "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" },
+          { "path": "/48/96/", "label": "MUJER / ZAPATILLAS" }
+        ]
+      }
+    },
+    {
+      "slug": "yuth",
+      "name": "Yuth",
+      "enabled": true,
+      "platform": "vtex",
+      "baseUrl": "https://www.yuth.com.bo",
+      "currency": "BOB",
+      "vtex": {
+        "sizeSpecificationId": 57,
+        "sizeFieldName": "TALLA",
+        "categories": [
+          { "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" },
+          { "path": "/48/96/", "label": "MUJER / ZAPATILLAS" }
+        ]
+      }
+    }
+  ],
+
+  "web": {
+    "port": 4321,
+    "host": "127.0.0.1"
+  }
+}

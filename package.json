@@ -1,0 +1,21 @@
+{
+  "name": "scraping-zap",
+  "version": "1.0.0",
+  "description": "Scraper de zapatillas por talla para tiendas VTEX de Bolivia, con historial de precios y comparacion entre tiendas",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-assets.mjs",
+    "scrape": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js scrape",
+    "serve": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js serve",
+    "report": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js report",
+    "compare": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js compare",
+    "runs": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js runs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

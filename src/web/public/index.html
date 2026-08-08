@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zapatillas talla 11–12 · Fair Play & Yuth</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel-2: #1d2129; --line: #2a2f3a;
+    --text: #e7eaf0; --muted: #949cad; --accent: #5b9dff; --good: #3ecf8e;
+    --warn: #ffb454; --bad: #ff6b6b; --radius: 12px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7f9; --panel: #ffffff; --panel-2: #f0f2f5; --line: #dfe3ea;
+      --text: #12151c; --muted: #626b7d; --accent: #1a66d6; --good: #12875a;
+      --warn: #a76000; --bad: #c62f2f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 20; background: var(--panel);
+    border-bottom: 1px solid var(--line); padding: 14px 20px;
+  }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 12.5px; }
+  .stats { display: flex; gap: 18px; flex-wrap: wrap; margin-left: auto; }
+  .stat b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+
+  nav { display: flex; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+  nav button {
+    background: transparent; border: 1px solid transparent; color: var(--muted);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13.5px; font-weight: 550;
+  }
+  nav button:hover { color: var(--text); background: var(--panel-2); }
+  nav button.on { background: var(--accent); color: #fff; }
+
+  main { padding: 18px 20px 60px; max-width: 1500px; margin: 0 auto; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  input, select {
+    background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 10px; font-size: 13.5px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .chk { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--muted); cursor: pointer; }
+  .chk input { accent-color: var(--accent); }
+
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; cursor: pointer; display: flex; flex-direction: column;
+    transition: border-color .12s, transform .12s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .thumb { aspect-ratio: 1; background: var(--panel-2); position: relative; }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+  .badge {
+    font-size: 10.5px; font-weight: 700; padding: 3px 7px; border-radius: 5px;
+    letter-spacing: .02em; color: #fff; background: #0007; backdrop-filter: blur(4px);
+  }
+  .b-off { background: var(--bad); }
+  .b-low { background: var(--good); }
+  .b-last { background: var(--warn); color: #111; }
+  .store-tag {
+    position: absolute; top: 8px; right: 8px; font-size: 10.5px; font-weight: 700;
+    padding: 3px 7px; border-radius: 5px; background: #000a; color: #fff; backdrop-filter: blur(4px);
+  }
+  .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .brand { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 650; }
+  .name { font-size: 13.5px; font-weight: 550; line-height: 1.3; }
+  .meta { font-size: 11.5px; color: var(--muted); }
+  .prices { display: flex; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+  .price { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .strike { color: var(--muted); text-decoration: line-through; font-size: 12.5px; }
+  .rival { font-size: 11.5px; color: var(--warn); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: 650; position: sticky; top: 96px; background: var(--bg); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--panel); }
+  .wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  a { color: var(--accent); }
+
+  .drawer {
+    position: fixed; inset: 0 0 0 auto; width: min(520px, 100%); background: var(--panel);
+    border-left: 1px solid var(--line); transform: translateX(100%); transition: transform .2s;
+    z-index: 50; overflow-y: auto; padding: 20px;
+  }
+  .drawer.open { transform: none; }
+  .scrim { position: fixed; inset: 0; background: #0008; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 40; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .close { position: absolute; top: 14px; right: 16px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .kv { display: grid; grid-template-columns: 118px 1fr; gap: 6px 12px; font-size: 12.5px; margin: 10px 0; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; word-break: break-word; }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 22px 0 8px; }
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; }
+  code { font-size: 11.5px; background: var(--panel-2); padding: 1px 5px; border-radius: 4px; word-break: break-all; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
+  .ok { color: var(--good); } .err { color: var(--bad); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="row">
+    <div>
+      <h1>Zapatillas en tu talla</h1>
+      <div class="sub" id="subtitle">cargando…</div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+  <nav>
+    <button class="on" data-tab="catalog">Catálogo</button>
+    <button data-tab="compare">Comparar tiendas</button>
+    <button data-tab="drops">Bajadas de precio</button>
+    <button data-tab="runs">Origen de los datos</button>
+  </nav>
+</header>
+
+<main>
+  <div class="filters" id="filters">
+    <input id="q" type="search" placeholder="Buscar modelo, marca o código…" style="min-width:230px">
+    <select id="store"><option value="">Todas las tiendas</option></select>
+    <select id="brand"><option value="">Todas las marcas</option></select>
+    <select id="size"><option value="">Todas las tallas</option></select>
+    <select id="sort">
+      <option value="price_asc">Precio: menor a mayor</option>
+      <option value="price_desc">Precio: mayor a menor</option>
+      <option value="discount">Mayor descuento</option>
+      <option value="drop">Mayor bajada vs. antes</option>
+      <option value="stock">Menor stock (urgente)</option>
+      <option value="brand">Marca</option>
+      <option value="recent">Recién agregados</option>
+    </select>
+    <input id="maxPrice" type="number" placeholder="Precio máx. Bs" style="width:130px">
+    <label class="chk"><input type="checkbox" id="inStock" checked> Solo con stock</label>
+    <label class="chk"><input type="checkbox" id="discounted"> Solo en oferta</label>
+  </div>
+  <div id="view"></div>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><button class="close" id="close">Cerrar</button><div id="detail"></div></aside>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n == null ? '—' : 'Bs ' + Number(n).toLocaleString('es-BO', { maximumFractionDigits: 0 });
+const pct = (n) => n == null ? '' : (n > 0 ? '+' : '') + n + '%';
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const when = (iso) => iso ? new Date(iso).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+
+/** VTEX sirve miniaturas insertando -ancho-alto tras el id de la imagen. */
+const thumb = (url, px = 320) => url ? url.replace(/(\/arquivos\/ids\/\d+)(\/)/, `$1-${px}-${px}$2`) : '';
+
+/** El stock de VTEX viene topado: 1–9 es real, 10/100 son topes. */
+const stockText = (o) => o.stock_is_capped ? `${o.stock}+ pares` : (o.stock === 1 ? 'último par' : `${o.stock} pares`);
+
+let TAB = 'catalog';
+let FACETS = null;
+
+function params() {
+  const p = new URLSearchParams();
+  if ($('q').value) p.set('q', $('q').value);
+  if ($('store').value) p.set('store', $('store').value);
+  if ($('brand').value) p.set('brand', $('brand').value);
+  if ($('size').value) p.set('sizes', $('size').value);
+  if ($('maxPrice').value) p.set('maxPrice', $('maxPrice').value);
+  if ($('discounted').checked) p.set('discounted', '1');
+  if (!$('inStock').checked) p.set('inStock', '0');
+  p.set('sort', $('sort').value);
+  p.set('limit', '1000');
+  return p;
+}
+
+async function loadStats() {
+  const s = await (await fetch('/api/stats')).json();
+  $('subtitle').textContent =
+    `Tallas US ${s.targetSizes.labels.join(' · ')} — pie de ${s.targetSizes.footLengthCm} cm · última extracción ${when(s.last_run)}`;
+  $('stats').innerHTML = [
+    ['Con stock', s.in_stock], ['SKUs seguidos', s.total_skus],
+    ['Modelos', s.products], ['En 2 tiendas', s.matched_groups],
+    ['Desde', fmt(s.cheapest)],
+  ].map(([k, v]) => `<div class="stat"><b>${typeof v === 'number' ? v.toLocaleString('es-BO') : v}</b><span>${k}</span></div>`).join('');
+}
+
+async function loadFacets() {
+  FACETS = await (await fetch('/api/facets')).json();
+  const fill = (el, items, label) => {
+    el.innerHTML = `<option value="">${label}</option>` +
+      items.map((i) => `<option value="${esc(i.value)}">${esc(i.label ?? i.value)} (${i.count})</option>`).join('');
+  };
+  fill($('store'), FACETS.stores, 'Todas las tiendas');
+  fill($('brand'), FACETS.brands, 'Todas las marcas');
+  fill($('size'), FACETS.sizes, 'Todas las tallas');
+}
+
+async function render() {
+  $('filters').style.display = TAB === 'catalog' ? 'flex' : 'none';
+  const view = $('view');
+  view.innerHTML = '<div class="empty">Cargando…</div>';
+
+  if (TAB === 'catalog') return renderCatalog(view);
+  if (TAB === 'compare') return renderCompare(view);
+  if (TAB === 'drops') return renderDrops(view);
+  return renderRuns(view);
+}
+
+async function renderCatalog(view) {
+  const { offers } = await (await fetch('/api/offers?' + params())).json();
+  if (!offers.length) return void (view.innerHTML = '<div class="empty">Nada coincide con estos filtros.</div>');
+
+  view.innerHTML = `<div class="sub" style="margin-bottom:10px">${offers.length} resultados</div><div class="grid">` +
+    offers.map((o) => {
+      const badges = [];
+      if (o.discount_pct) badges.push(`<span class="badge b-off">−${o.discount_pct}%</span>`);
+      if (o.is_all_time_low && o.observation_count > 1) badges.push('<span class="badge b-low">precio mínimo</span>');
+      if (o.stock === 1) badges.push('<span class="badge b-last">último par</span>');
+      const rival = o.rival_best_price != null && o.rival_best_price < o.price
+        ? `<div class="rival">↓ ${fmt(o.rival_best_price)} en ${esc(o.rival_store)}</div>` : '';
+      return `<article class="card" data-sku="${o.sku_id}">
+        <div class="thumb">
+          ${o.image_url ? `<img loading="lazy" src="${esc(thumb(o.image_url))}" alt="${esc(o.product_name)}">` : ''}
+          <div class="badges">${badges.join('')}</div>
+          <span class="store-tag">${esc(o.store_slug)}</span>
+        </div>
+        <div class="body">
+          <div class="brand">${esc(o.brand ?? '')}</div>
+          <div class="name">${esc(o.product_name)}</div>
+          <div class="meta">Talla ${esc(o.size_label)}${o.size_cm ? ` · ${o.size_cm} cm` : ''} · ${stockText(o)}</div>
+          <div class="prices">
+            <span class="price">${fmt(o.price)}</span>
+            ${o.list_price > o.price ? `<span class="strike">${fmt(o.list_price)}</span>` : ''}
+          </div>
+          ${rival}
+        </div>
+      </article>`;
+    }).join('') + '</div>';
+
+  view.querySelectorAll('.card').forEach((c) => c.addEventListener('click', () => openDetail(c.dataset.sku)));
+}
+
+let COMPARE_MODE = 'exact';
+
+async function renderCompare(view) {
+  const { comparisons } = await (await fetch('/api/compare?mode=' + COMPARE_MODE)).json();
+
+  const toggle = `<div class="filters" style="margin-bottom:12px">
+      <select id="cmode">
+        <option value="exact"${COMPARE_MODE === 'exact' ? ' selected' : ''}>Mismo modelo y mismo color</option>
+        <option value="model"${COMPARE_MODE === 'model' ? ' selected' : ''}>Mismo modelo, cualquier color</option>
+      </select>
+      <span class="sub">${COMPARE_MODE === 'exact'
+        ? 'Comparación exacta: idéntico código de fabricante en ambas tiendas.'
+        : 'Ignora el color. Encuentra el mismo modelo más barato aunque sea en otra colorway.'}</span>
+    </div>`;
+
+  const attach = () => $('cmode').addEventListener('change', (e) => {
+    COMPARE_MODE = e.target.value;
+    renderCompare(view);
+  });
+
+  if (!comparisons.length) {
+    view.innerHTML = toggle + '<div class="empty">Ningún zapato en tu talla está con stock en ambas tiendas ahora mismo.</div>';
+    return attach();
+  }
+
+  view.innerHTML = toggle +
+    `<div class="sub" style="margin-bottom:10px">${comparisons.length} coincidencias con stock en tu talla, ordenadas por lo que te ahorrás.</div>
+    <div class="wrap"><table><thead><tr>
+      <th>Zapato</th><th>Talla</th><th>Más barato</th><th class="num">Precio</th>
+      <th>Más caro</th><th class="num">Precio</th><th class="num">Ahorro</th>
+    </tr></thead><tbody>` +
+    comparisons.map((c) => `<tr>
+      <td><strong>${esc(c.brand ?? '')}</strong> ${esc(c.product_name)}<br><span class="pill">${esc(c.ref_code ?? '')}</span></td>
+      <td>${esc(c.size_label)}${c.size_cm ? `<br><span class="sub">${c.size_cm} cm</span>` : ''}</td>
+      <td><a href="${esc(c.cheapest_url)}" target="_blank" rel="noopener">${esc(c.cheapest_store)} ↗</a></td>
+      <td class="num"><strong>${fmt(c.cheapest_price)}</strong></td>
+      <td><a href="${esc(c.dearest_url)}" target="_blank" rel="noopener">${esc(c.dearest_store)} ↗</a>
+        ${c.dearest_ref && c.dearest_ref !== c.ref_code ? `<br><span class="sub">color ${esc(c.dearest_ref)}</span>` : ''}</td>
+      <td class="num">${fmt(c.dearest_price)}</td>
+      <td class="num ${c.saving > 0 ? 'ok' : ''}"><strong>${fmt(c.saving)}</strong>${c.saving > 0 ? `<br><span class="sub">${c.saving_pct}%</span>` : ''}</td>
+    </tr>`).join('') + '</tbody></table></div>';
+  attach();
+}
+
+async function renderDrops(view) {
+  const { drops } = await (await fetch('/api/drops?hours=720')).json();
+  if (!drops.length) {
+    return void (view.innerHTML = '<div class="empty">Sin bajadas registradas todavía.<br><span class="sub">Necesitás al menos dos extracciones para comparar contra el pasado.</span></div>');
+  }
+  view.innerHTML = '<div class="wrap"><table><thead><tr><th>Modelo</th><th>Tienda</th><th>Talla</th><th class="num">Antes</th><th class="num">Ahora</th><th class="num">Cambio</th><th>Detectado</th></tr></thead><tbody>' +
+    drops.map((o) => `<tr data-sku="${o.sku_id}" style="cursor:pointer">
+      <td><strong>${esc(o.brand ?? '')}</strong> ${esc(o.product_name)}</td>
+      <td><span class="pill">${esc(o.store_slug)}</span></td>
+      <td>${esc(o.size_label)}</td>
+      <td class="num strike">${fmt(o.prev_price)}</td>
+      <td class="num"><strong>${fmt(o.price)}</strong></td>
+      <td class="num ok">${pct(o.change_pct)}</td>
+      <td class="sub">${when(o.observed_at)}</td>
+    </tr>`).join('') + '</tbody></table></div>';
+  view.querySelectorAll('tr[data-sku]').forEach((r) => r.addEventListener('click', () => openDetail(r.dataset.sku)));
+}
+
+async function renderRuns(view) {
+  const { runs } = await (await fetch('/api/runs')).json();
+  view.innerHTML = `<div class="sub" style="margin-bottom:10px">Cada fila es una extracción. De acá sale la trazabilidad: qué tienda, cuándo, cuántas peticiones y contra qué endpoints.</div>
+    <div class="wrap"><table><thead><tr>
+      <th>#</th><th>Tienda</th><th>Inicio</th><th>Estado</th><th class="num">Peticiones</th>
+      <th class="num">Productos</th><th class="num">En tu talla</th><th class="num">Con stock</th>
+      <th class="num">Cambios</th><th class="num">Duración</th><th>Endpoint de origen</th>
+    </tr></thead><tbody>` +
+    runs.map((r) => {
+      let ep = '';
+      try { ep = (JSON.parse(r.endpoints || '[]')[0]) || ''; } catch { ep = ''; }
+      return `<tr>
+        <td>${r.id}</td>
+        <td><span class="pill">${esc(r.store_slug)}</span></td>
+        <td class="sub">${when(r.started_at)}</td>
+        <td class="${r.status === 'ok' ? 'ok' : 'err'}">${esc(r.status)}${r.error_message ? `<br><span class="sub">${esc(r.error_message)}</span>` : ''}</td>
+        <td class="num">${r.request_count}</td>
+        <td class="num">${r.products_found}</td>
+        <td class="num">${r.skus_target_size}</td>
+        <td class="num">${r.skus_in_stock}</td>
+        <td class="num">${r.price_changes}</td>
+        <td class="num">${r.duration_ms != null ? (r.duration_ms / 1000).toFixed(1) + 's' : '—'}</td>
+        <td>${ep ? `<code>${esc(ep)}</code>` : '—'}</td>
+      </tr>`;
+    }).join('') + '</tbody></table></div>';
+}
+
+/** Grafico de historial: SVG inline, sin librerias. */
+function sparkline(history) {
+  const pts = history.filter((h) => h.price != null);
+  if (pts.length < 2) return '<div class="sub">Todavía no hay suficientes observaciones para dibujar la evolución. Volvé a correr el scraper en unos días.</div>';
+  const W = 460, H = 130, PAD = 26;
+  const prices = pts.map((p) => p.price);
+  const min = Math.min(...prices), max = Math.max(...prices);
+  const span = max - min || 1;
+  const x = (i) => PAD + (i * (W - PAD * 2)) / (pts.length - 1);
+  const y = (p) => H - PAD - ((p - min) / span) * (H - PAD * 2);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.price).toFixed(1)}`).join(' ');
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - PAD} L${PAD},${H - PAD} Z`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolución del precio">
+    <path d="${area}" fill="var(--accent)" opacity=".13"/>
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    ${pts.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.price).toFixed(1)}" r="3" fill="var(--accent)"><title>${when(p.observed_at)} · ${fmt(p.price)}</title></circle>`).join('')}
+    <text x="${PAD}" y="14" fill="var(--muted)" font-size="11">${fmt(max)}</text>
+    <text x="${PAD}" y="${H - 8}" fill="var(--muted)" font-size="11">${fmt(min)}</text>
+  </svg>`;
+}
+
+async function openDetail(skuId) {
+  const d = await (await fetch('/api/sku/' + skuId)).json();
+  $('detail').innerHTML = `
+    <div class="brand">${esc(d.brand ?? '')}</div>
+    <h2 style="margin:2px 0 6px;font-size:19px">${esc(d.product_name)}</h2>
+    <div class="sub">Talla ${esc(d.size_label)}${d.size_cm ? ` · ${d.size_cm} cm` : ''} · ${esc(d.store_name)}</div>
+    ${d.image_url ? `<img src="${esc(thumb(d.image_url, 600))}" alt="" style="width:100%;border-radius:10px;margin:14px 0;background:var(--panel-2)">` : ''}
+    <div class="prices">
+      <span class="price">${fmt(d.price)}</span>
+      ${d.list_price > d.price ? `<span class="strike">${fmt(d.list_price)}</span><span class="badge b-off">−${d.discount_pct}%</span>` : ''}
+    </div>
+
+    <h3>Precio en el tiempo</h3>
+    ${sparkline(d.history)}
+    <dl class="kv">
+      <dt>Precio anterior</dt><dd>${fmt(d.prev_price)} ${d.change_pct != null ? `<span class="${d.change_pct < 0 ? 'ok' : 'err'}">(${pct(d.change_pct)})</span>` : ''}</dd>
+      <dt>Mínimo histórico</dt><dd>${fmt(d.min_price_ever)} ${d.is_all_time_low ? '<span class="ok">← está en su mínimo</span>' : ''}</dd>
+      <dt>Máximo histórico</dt><dd>${fmt(d.max_price_ever)}</dd>
+      <dt>Observaciones</dt><dd>${d.observation_count}</dd>
+    </dl>
+
+    <h3>Disponibilidad</h3>
+    <dl class="kv">
+      <dt>Estado</dt><dd>${d.available ? '<span class="ok">con stock</span>' : '<span class="err">agotado</span>'}</dd>
+      <dt>Stock</dt><dd>${stockText(d)}${d.stock_is_capped ? ' <span class="sub">(la tienda no publica el número exacto por encima de este tope)</span>' : ''}</dd>
+      <dt>Vendedor</dt><dd>${esc(d.seller ?? '—')}</dd>
+    </dl>
+
+    ${d.rival_best_price != null ? `<h3>En la otra tienda</h3>
+      <dl class="kv"><dt>${esc(d.rival_store)}</dt><dd>${fmt(d.rival_best_price)}
+      ${d.rival_best_price < d.price ? `<span class="ok">— ${fmt(d.price - d.rival_best_price)} más barato allá</span>` : '<span class="sub">— acá está mejor</span>'}</dd></dl>` : ''}
+
+    <h3>Origen de la extracción</h3>
+    <dl class="kv">
+      <dt>Tienda</dt><dd>${esc(d.store_name)} <span class="pill">${esc(d.store_slug)}</span></dd>
+      <dt>Página del producto</dt><dd><a href="${esc(d.product_url)}" target="_blank" rel="noopener">abrir en la tienda ↗</a></dd>
+      <dt>URL del SKU</dt><dd><code>${esc(d.sku_url)}</code></dd>
+      <dt>Código fabricante</dt><dd>${esc(d.ref_code ?? '—')}</dd>
+      <dt>Imagen</dt><dd><code>${esc(d.image_url ?? '—')}</code></dd>
+      <dt>Observado</dt><dd>${when(d.observed_at)}</dd>
+      <dt>Corrida</dt><dd>#${d.run_id}</dd>
+      <dt>Endpoint API</dt><dd><code>${esc(d.endpoints[0] ?? '—')}</code></dd>
+    </dl>`;
+  $('drawer').classList.add('open');
+  $('scrim').classList.add('open');
+}
+
+function closeDetail() {
+  $('drawer').classList.remove('open');
+  $('scrim').classList.remove('open');
+}
+
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('on', x === b));
+  TAB = b.dataset.tab;
+  render();
+}));
+
+let timer;
+$('filters').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 220); });
+$('close').addEventListener('click', closeDetail);
+$('scrim').addEventListener('click', closeDetail);
+document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDetail());
+
+loadStats().then(loadFacets).then(render).catch((err) => {
+  $('view').innerHTML = `<div class="empty">No se pudo cargar: ${esc(err.message)}<br><span class="sub">¿Corriste <code>npm run scrape</code> al menos una vez?</span></div>`;
+});
+</script>
+</body>
+</html>
