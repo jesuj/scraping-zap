@@ -54,7 +54,13 @@
       "Bash(tail -3 /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/a.log)",
       "Bash(echo \"--- puerto 4321 ---\")",
       "Bash(pkill -f \"dist/cli.js serve\")",
-      "Bash(pkill -9 -f \"dist/cli.js serve\")"
+      "Bash(pkill -9 -f \"dist/cli.js serve\")",
+      "Bash(echo \"exit tsc: $?\")",
+      "Bash(echo \"=== el servidor sigue en pie ===\")",
+      "Bash(curl -sS -o /dev/null -w \"  /api/stats -> http:%{http_code}\\\\n\" --max-time 5 http://127.0.0.1:4399/api/stats)",
+      "Bash(curl -sS -o /dev/null -w \"  /          -> http:%{http_code} bytes:%{size_download}\\\\n\" --max-time 5 http://127.0.0.1:4399/)",
+      "Bash(curl -sS -o /dev/null -w \"  /api/offers-> http:%{http_code}\\\\n\" --max-time 5 \"http://127.0.0.1:4399/api/offers?limit=3\")",
+      "Bash(echo \"=== intento de travesia de directorios ===\")"
     ]
   }
 }

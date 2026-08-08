@@ -39,8 +39,21 @@ export function startServer(db: Db, config: AppConfig): void {
     try {
       handle(req, res, db, config);
     } catch (err) {
-      sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) });
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`  error en ${req.method} ${req.url}: ${message}`);
+
+      // Si la respuesta ya empezo a salir, no se puede cambiar el estado:
+      // intentarlo lanza ERR_HTTP_HEADERS_SENT y tumba el proceso entero.
+      // Lo unico correcto es cortar la conexion.
+      if (res.headersSent) res.destroy();
+      else sendJson(res, 500, { error: message });
     }
+  });
+
+  // Ultima red de seguridad: una peticion con problemas nunca debe matar
+  // el servidor. Sin esto, cualquier error no capturado deja la web caida.
+  server.on('clientError', (_err, socket) => {
+    if (socket.writable) socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
   });
 
   // Sin esto, un puerto ocupado revienta con un stack trace de node:net.
@@ -120,6 +133,11 @@ function handle(req: IncomingMessage, res: ServerResponse, db: Db, config: AppCo
     return sendJson(res, 200, { ...detail, history: skuHistory(db, skuId) });
   }
 
+  // Una ruta /api/ desconocida es un error de cliente, no un archivo faltante.
+  if (path.startsWith('/api/')) {
+    return sendJson(res, 404, { error: `Endpoint desconocido: ${path}` });
+  }
+
   return serveStatic(res, path === '/' ? '/index.html' : path);
 }
 
@@ -152,17 +170,25 @@ function serveStatic(res: ServerResponse, path: string): void {
   const safe = path.replace(/\.\./g, '').replace(/^\/+/, '');
   const file = join(PUBLIC_DIR, safe);
   if (!file.startsWith(PUBLIC_DIR)) {
-    res.writeHead(403).end('Prohibido');
+    res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }).end('Prohibido');
     return;
   }
+
+  // Leer ANTES de escribir la cabecera. Al reves, un archivo inexistente
+  // (el /favicon.ico que pide el navegador solo) dejaba la respuesta a medias
+  // y el manejo del error ya no podia cambiar el codigo de estado.
+  let body: Buffer;
   try {
-    const ext = safe.slice(safe.lastIndexOf('.'));
-    res.writeHead(200, { 'content-type': MIME[ext] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
+    body = readFileSync(file);
   } catch {
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('No encontrado');
+    return;
   }
+
+  const ext = safe.slice(safe.lastIndexOf('.'));
+  res.writeHead(200, { 'content-type': MIME[ext] ?? 'application/octet-stream' });
+  res.end(body);
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
