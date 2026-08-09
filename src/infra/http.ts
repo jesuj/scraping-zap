@@ -25,14 +25,29 @@ export class HttpClient {
     this.#opts = opts;
   }
 
+  /** GET que devuelve JSON. */
   async getJson<T>(url: string): Promise<T> {
+    return this.#request<T>(url, 'json');
+  }
+
+  /** GET que devuelve el cuerpo como texto (HTML de listados y fichas). */
+  async getText(url: string): Promise<string> {
+    return this.#request<string>(url, 'text');
+  }
+
+  /** POST con cuerpo JSON, para APIs GraphQL. */
+  async postJson<T>(url: string, payload: unknown): Promise<T> {
+    return this.#request<T>(url, 'json', payload);
+  }
+
+  async #request<T>(url: string, as: 'json' | 'text', payload?: unknown): Promise<T> {
     return this.#withSlot(async () => {
       let lastError: unknown;
       for (let attempt = 0; attempt <= this.#opts.maxRetries; attempt++) {
         if (attempt > 0) await sleep(backoffMs(attempt));
         await this.#respectRateLimit();
         try {
-          const res = await this.#fetchOnce(url);
+          const res = await this.#fetchOnce(url, payload);
           // 429/5xx son transitorios: reintentar. 4xx restantes son definitivos.
           if (res.status === 429 || res.status >= 500) {
             lastError = new Error(`HTTP ${res.status} en ${url}`);
@@ -43,7 +58,7 @@ export class HttpClient {
             continue;
           }
           if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`);
-          return (await res.json()) as T;
+          return (as === 'text' ? await res.text() : await res.json()) as T;
         } catch (err) {
           lastError = err;
           if (err instanceof Error && err.name === 'AbortError') continue;
@@ -56,18 +71,23 @@ export class HttpClient {
     });
   }
 
-  async #fetchOnce(url: string): Promise<Response> {
+  async #fetchOnce(url: string, payload?: unknown): Promise<Response> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.#opts.timeoutMs);
     try {
       this.requestCount++;
+      const headers: Record<string, string> = {
+        'user-agent': this.#opts.userAgent,
+        accept: 'application/json, text/html;q=0.9',
+        'accept-language': 'es-BO,es;q=0.9',
+      };
+      if (payload !== undefined) headers['content-type'] = 'application/json';
+
       return await fetch(url, {
         signal: controller.signal,
-        headers: {
-          'user-agent': this.#opts.userAgent,
-          accept: 'application/json',
-          'accept-language': 'es-BO,es;q=0.9',
-        },
+        method: payload === undefined ? 'GET' : 'POST',
+        headers,
+        ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
       });
     } finally {
       clearTimeout(timer);

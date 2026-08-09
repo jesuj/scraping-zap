@@ -1,8 +1,8 @@
 {
-  "$comment": "Configuracion unica del sistema. Agregar una tienda VTEX = agregar un objeto en 'stores'. No hace falta tocar codigo.",
+  "$comment": "Configuracion unica del sistema. Agregar una tienda = agregar un objeto en 'stores'. Solo calzado de HOMBRE.",
 
   "targetSizes": {
-    "$comment": "Tallas que te interesan, en la escala que usan las tiendas (US hombre). El pie declarado es de 30 cm.",
+    "$comment": "Tallas objetivo en escala US hombre. El pie declarado es de 30 cm.",
     "system": "US_MEN",
     "labels": ["11", "11.5", "12"],
     "footLengthCm": 30
@@ -27,12 +27,8 @@
       "baseUrl": "https://www.fairplay.com.bo",
       "currency": "BOB",
       "vtex": {
-        "sizeSpecificationId": 57,
         "sizeFieldName": "TALLA",
-        "categories": [
-          { "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" },
-          { "path": "/48/96/", "label": "MUJER / ZAPATILLAS" }
-        ]
+        "categories": [{ "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" }]
       }
     },
     {
@@ -43,12 +39,57 @@
       "baseUrl": "https://www.yuth.com.bo",
       "currency": "BOB",
       "vtex": {
-        "sizeSpecificationId": 57,
         "sizeFieldName": "TALLA",
-        "categories": [
-          { "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" },
-          { "path": "/48/96/", "label": "MUJER / ZAPATILLAS" }
-        ]
+        "categories": [{ "path": "/47/54/", "label": "HOMBRE / ZAPATILLAS" }]
+      }
+    },
+    {
+      "slug": "impulse",
+      "name": "Impulse",
+      "enabled": true,
+      "platform": "magento",
+      "baseUrl": "https://impulse.bo",
+      "currency": "BOB",
+      "magento": {
+        "graphqlPath": "/graphql",
+        "sizeAttribute": "talla_calzado",
+        "categories": [{ "id": "59", "label": "HOMBRE / CALZADO" }]
+      }
+    },
+    {
+      "slug": "taf",
+      "name": "TAF",
+      "enabled": true,
+      "platform": "woocommerce",
+      "baseUrl": "https://taf.com.bo",
+      "currency": "BOB",
+      "woocommerce": {
+        "sizeAttribute": "attribute_pa_talla",
+        "categories": [{ "path": "/categoria/hombre/zapatillas/", "label": "HOMBRE / ZAPATILLAS" }],
+        "brandArchives": [
+          { "path": "/marca/nike/", "brand": "NIKE" },
+          { "path": "/marca/jordan/", "brand": "JORDAN" },
+          { "path": "/marca/adidas/", "brand": "ADIDAS" },
+          { "path": "/marca/new-balance/", "brand": "NEW BALANCE" },
+          { "path": "/marca/puma/", "brand": "PUMA" },
+          { "path": "/marca/converse/", "brand": "CONVERSE" },
+          { "path": "/marca/veja/", "brand": "VEJA" }
+        ],
+        "maxPages": 25
+      }
+    },
+    {
+      "slug": "marathon",
+      "name": "Marathon",
+      "enabled": true,
+      "platform": "hybris",
+      "baseUrl": "https://www.marathon.store",
+      "currency": "BOB",
+      "hybris": {
+        "listPath": "/bo/productos/c/marathonProducts",
+        "sizeFacet": "sizeFootwear",
+        "genderPrefix": "H",
+        "maxPages": 12
       }
     }
   ],

@@ -37,8 +37,16 @@ function validate(cfg: AppConfig, path: string): void {
     if (seen.has(store.slug)) fail(`slug duplicado: "${store.slug}"`);
     seen.add(store.slug);
     if (!store.baseUrl?.startsWith('http')) fail(`baseUrl invalida en "${store.slug}"`);
-    if (store.platform === 'vtex' && !store.vtex?.categories?.length) {
-      fail(`la tienda VTEX "${store.slug}" no tiene categorias configuradas`);
+
+    // Cada plataforma exige su propio bloque de configuracion.
+    const required: Record<string, unknown> = {
+      vtex: store.vtex?.categories?.length,
+      magento: store.magento?.categories?.length,
+      woocommerce: store.woocommerce?.categories?.length,
+      hybris: store.hybris?.sizeFacet,
+    };
+    if (store.platform in required && !required[store.platform]) {
+      fail(`la tienda "${store.slug}" (${store.platform}) no tiene su bloque "${store.platform}" completo`);
     }
   }
 

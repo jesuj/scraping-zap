@@ -197,18 +197,34 @@ switch (command) {
     break;
   }
 
+  case 'backup': {
+    // VACUUM INTO produce una copia consistente y compactada aunque haya
+    // escrituras en curso. Copiar el archivo a mano puede dejar el WAL a medias.
+    const dir = join(PROJECT_ROOT, 'backups');
+    mkdirSync(dir, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const dest = join(dir, `zapatillas-${stamp}.db`);
+    db.exec(`VACUUM INTO '${dest.replace(/'/g, "''")}'`);
+    console.log(`Backup creado: ${dest}`);
+    console.log(`Para volver atras: cp "${dest}" data/zapatillas.db`);
+    break;
+  }
+
   default:
     console.log(`
   scraping-zap — zapatillas en talla ${config.targetSizes.labels.join('/')} US
 
-  npm run scrape      Extrae de Fair Play y Yuth y guarda el historial
+  npm run scrape      Extrae de todas las tiendas y guarda el historial
   npm run serve       Abre la interfaz web
   npm run report      Lista en consola lo disponible en tu talla
   npm run compare     Mismo modelo y talla: precio en cada tienda
+  npm run build && node dist/cli.js compare model   Mismo modelo, cualquier color
   npm run build && node dist/cli.js drops [horas]
   npm run build && node dist/cli.js runs
-  npm run build && node dist/cli.js export
+  npm run build && node dist/cli.js export          A JSON y CSV
+  npm run build && node dist/cli.js backup          Copia de seguridad
 
+  Tiendas: ${config.stores.filter((s) => s.enabled).map((s) => s.slug).join(', ')}
   Datos en: ${DEFAULT_DB_PATH}
 `);
 }

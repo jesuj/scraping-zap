@@ -58,7 +58,10 @@ export async function runScrape(
     log(`→ ${storeConfig.name} (${storeConfig.platform}) · corrida #${runId}`);
 
     try {
-      const connector = createConnector(storeConfig, http, config.scrape.pageSize);
+      const connector = createConnector(storeConfig, http, {
+        pageSize: config.scrape.pageSize,
+        targetSizes: config.targetSizes.labels,
+      });
       const result: ScrapeResult = await connector.fetchFootwear((msg) => log(msg));
       const observedAt = new Date().toISOString();
 

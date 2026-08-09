@@ -1,8 +1,18 @@
 # scraping-zap
 
-Scraper de zapatillas en talla **US 11 / 11.5 / 12** para [Fair Play](https://www.fairplay.com.bo/)
-y [Yuth](https://www.yuth.com.bo/), con historial de precios, comparación entre tiendas
-e interfaz web.
+Scraper de **calzado de hombre** en talla **US 11 / 11.5 / 12** para cinco tiendas
+bolivianas, con historial de precios, comparación entre tiendas e interfaz web.
+
+| Tienda | Plataforma | Cómo se obtienen los datos | Stock |
+|---|---|---|---|
+| [Fair Play](https://www.fairplay.com.bo/) | VTEX | API JSON pública | topado (0/1/10/100) |
+| [Yuth](https://www.yuth.com.bo/) | VTEX | API JSON pública | topado (0/1/10/100) |
+| [Impulse](https://impulse.bo/) | Magento | GraphQL público | solo sí/no |
+| [TAF](https://taf.com.bo/) | WooCommerce | JSON embebido en el HTML | **cantidad exacta** |
+| [Marathon](https://www.marathon.store/bo) | SAP Hybris | listado filtrado por faceta | solo sí/no |
+
+Solo se recorre calzado de hombre. Para incluir mujer, agregá su categoría en
+`config/config.json`.
 
 ## Empezar
 
@@ -75,6 +85,22 @@ PORT=4322 npm run serve
 Todo en un solo archivo SQLite: `data/zapatillas.db`. No hay servidor de base de datos
 que instalar ni configurar — es un archivo que podés copiar, respaldar o borrar.
 
+### Copias de seguridad
+
+```bash
+npm run build && node dist/cli.js backup
+```
+
+Deja una copia con fecha en `backups/`. Usa `VACUUM INTO`, que produce un archivo
+consistente y compactado aunque haya escrituras en curso — copiar el `.db` a mano puede
+dejar el WAL a medias y corromper la copia.
+
+Para volver atrás:
+
+```bash
+cp backups/zapatillas-2026-08-09T01-06-00.db data/zapatillas.db
+```
+
 Si querés los datos en archivos planos, `export` genera:
 
 - `export/zapatillas.json` — todo, incluida la procedencia
@@ -121,13 +147,20 @@ PUMA PALERMO LTH talla 11
 
 ## Sobre el stock
 
-VTEX **no publica el stock exacto**. Devuelve valores topados: se observaron `0`, `1`,
-`10` y `100`. Los valores de 1 a 9 son reales (`1` = literalmente el último par), pero
-`10` y `100` son topes: significan "10 o más" y "100 o más".
+Cada tienda publica un nivel de detalle distinto, y el sistema **no los mezcla como si
+fueran lo mismo**. La columna `stock_is_capped` marca cuándo la cifra no es exacta, y la
+interfaz muestra `10+ pares` en lugar de inventar un número.
 
-El sistema guarda esa distinción en `stock_is_capped` y la interfaz la muestra honestamente
-como `10+ pares` en vez de inventar un número exacto. El filtro "solo con stock" y el orden
-por "menor stock" son fiables; la cifra por encima del tope no lo es.
+- **TAF** es la única que da la **cantidad real** (`max_qty`). Su `stock: 2` significa dos pares.
+- **Fair Play y Yuth** (VTEX) devuelven valores topados: `0`, `1`, `10`, `100`. De 1 a 9 son
+  reales — `1` es literalmente el último par — pero `10` y `100` significan "10 o más" y
+  "100 o más".
+- **Impulse** solo informa `IN_STOCK` / `OUT_OF_STOCK`, sin cantidad.
+- **Marathon** no tiene página de variante: que un zapato aparezca bajo la faceta de talla
+  significa que está disponible, nada más.
+
+El filtro "solo con stock" es fiable en las cinco. El orden por "menor stock" solo tiene
+sentido en TAF, Fair Play y Yuth.
 
 ## Sobre las tallas
 
@@ -181,11 +214,31 @@ Para descubrir el árbol de categorías de una tienda VTEX:
 curl -s 'https://www.LATIENDA.com/api/catalog_system/pub/category/tree/3' | head -c 2000
 ```
 
-**Una tienda que no sea VTEX** (Shopify, WooCommerce, HTML plano) — implementar la interfaz
+**Otra tienda Magento, WooCommerce o Hybris** — también solo configuración: ya hay conector
+para las tres. Mirá los bloques `magento`, `woocommerce` y `hybris` en `config/config.json`.
+
+**Una plataforma nueva** (Shopify, PrestaShop, HTML plano) — implementar la interfaz
 `StoreConnector` (`src/domain/types.ts`) en un archivo nuevo bajo `src/connectors/` y
 registrarlo en `src/connectors/registry.ts`. El resto del sistema — historial, comparación,
 web, exportación — funciona sin cambios, porque todo trabaja contra el modelo de dominio,
 no contra la forma de la respuesta de cada tienda.
+
+### Tiendas evaluadas y descartadas
+
+- **[Bata Bolivia](https://www.bata.com.bo/)** — es VTEX, entraría con solo configuración,
+  pero su calzado de hombre llega hasta **EU 44** (≈ US 10.5). Todo su catálogo queda por
+  debajo de la talla buscada.
+- **[Sport Line](https://sportlinebolivia.com/)** y **[Tienda Winner](https://tiendawinner.com/)**
+  — API REST cerrada (401) y sin GraphQL. Requerirían parsear HTML sin datos estructurados.
+
+### Fragilidad de cada conector
+
+No todos envejecen igual, y conviene saberlo:
+
+- **VTEX y Magento** leen APIs con contrato. Son estables.
+- **TAF (WooCommerce)** y **Marathon (Hybris)** leen marcado HTML. Si esas tiendas rehacen
+  su plantilla, sus conectores se rompen. Emiten avisos en `warnings` en vez de fallar en
+  silencio, y una tienda caída no tumba la corrida de las demás.
 
 ## Estructura
 

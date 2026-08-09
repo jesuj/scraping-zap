@@ -7,11 +7,51 @@ export interface StoreConfig {
   platform: string;
   baseUrl: string;
   currency: string;
+
+  /** Fair Play, Yuth. Catalogo JSON publico. */
   vtex?: {
-    sizeSpecificationId: number;
     sizeFieldName: string;
     categories: Array<{ path: string; label: string }>;
   };
+
+  /** Impulse. GraphQL de Magento. */
+  magento?: {
+    graphqlPath: string;
+    sizeAttribute: string;
+    categories: Array<{ id: string; label: string }>;
+  };
+
+  /** TAF. WooCommerce, con las variantes embebidas en el HTML. */
+  woocommerce?: {
+    sizeAttribute: string;
+    categories: Array<{ path: string; label: string }>;
+    /**
+     * Archivos de marca. La tarjeta del listado no dice la marca, asi que se
+     * recorren estas paginas primero para construir un mapa URL -> marca.
+     */
+    brandArchives?: Array<{ path: string; brand: string }>;
+    maxPages: number;
+  };
+
+  /**
+   * Marathon. SAP Hybris. Filtra por talla y genero del lado del servidor
+   * mediante facetas, asi que el conector necesita las tallas objetivo.
+   */
+  hybris?: {
+    listPath: string;
+    sizeFacet: string;
+    /** Prefijo de genero en el valor de la faceta: "H|11" = hombre, talla 11. */
+    genderPrefix: string;
+    maxPages: number;
+  };
+}
+
+/** Lo que el orquestador entrega a cada conector. */
+export interface ConnectorOptions {
+  pageSize: number;
+  /** Etiquetas de talla buscadas. Los conectores que filtran del lado del
+   *  servidor las usan; los demas devuelven todo y filtra el pipeline. */
+  targetSizes: string[];
 }
 
 export interface AppConfig {

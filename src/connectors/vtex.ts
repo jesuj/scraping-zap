@@ -14,6 +14,7 @@
  */
 
 import type {
+  ConnectorOptions,
   ScrapeResult,
   ScrapedOffer,
   ScrapedProduct,
@@ -72,11 +73,11 @@ export class VtexConnector implements StoreConnector {
   #endpoints: string[] = [];
   #warnings: string[] = [];
 
-  constructor(store: StoreConfig, http: HttpClient, pageSize: number) {
+  constructor(store: StoreConfig, http: HttpClient, opts: ConnectorOptions) {
     if (!store.vtex) throw new Error(`La tienda "${store.slug}" no tiene bloque de config "vtex".`);
     this.store = store;
     this.#http = http;
-    this.#pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
+    this.#pageSize = Math.min(opts.pageSize, MAX_PAGE_SIZE);
   }
 
   async fetchFootwear(onProgress?: (msg: string) => void): Promise<ScrapeResult> {
