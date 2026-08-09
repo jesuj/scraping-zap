@@ -187,7 +187,12 @@ function serveStatic(res: ServerResponse, path: string): void {
   }
 
   const ext = safe.slice(safe.lastIndexOf('.'));
-  res.writeHead(200, { 'content-type': MIME[ext] ?? 'application/octet-stream' });
+  res.writeHead(200, {
+    'content-type': MIME[ext] ?? 'application/octet-stream',
+    // Sin esto el navegador cachea el HTML y seguis viendo la version anterior
+    // despues de editar la interfaz.
+    'cache-control': 'no-store',
+  });
   res.end(body);
 }
 
