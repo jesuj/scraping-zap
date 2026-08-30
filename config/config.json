@@ -50,6 +50,13 @@
       "platform": "magento",
       "baseUrl": "https://impulse.bo",
       "currency": "BOB",
+      "$scrapeComment": "Su GraphQL es lento (15-25s por pagina) y limita el ritmo con HTTP 507 si se lo apura. Estos valores conservadores tardan ~12 min pero completan; con los globales daba timeout. No subir la concurrencia.",
+      "scrape": {
+        "pageSize": 20,
+        "requestTimeoutMs": 90000,
+        "concurrency": 1,
+        "minDelayMs": 800
+      },
       "magento": {
         "graphqlPath": "/graphql",
         "sizeAttribute": "talla_calzado",

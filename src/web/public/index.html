@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- El CDN de Marathon bloquea el hotlinking: con cabecera Referer responde 403
+     y las fotos salen rotas. Sin Referer sirve la imagen normalmente. -->
+<meta name="referrer" content="no-referrer">
 <title>Zapatillas talla 11–12 · Fair Play & Yuth</title>
 <!-- Favicon embebido: evita que el navegador pida /favicon.ico en cada carga. -->
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>👟</text></svg>">
@@ -181,8 +184,17 @@ const when = (iso) => iso ? new Date(iso).toLocaleString('es-BO', { dateStyle: '
 /** VTEX sirve miniaturas insertando -ancho-alto tras el id de la imagen. */
 const thumb = (url, px = 320) => url ? url.replace(/(\/arquivos\/ids\/\d+)(\/)/, `$1-${px}-${px}$2`) : '';
 
-/** El stock de VTEX viene topado: 1–9 es real, 10/100 son topes. */
-const stockText = (o) => o.stock_is_capped ? `${o.stock}+ pares` : (o.stock === 1 ? 'último par' : `${o.stock} pares`);
+/**
+ * Cada tienda informa el stock con distinta precisión, y el texto lo refleja:
+ *   - TAF da la cantidad real            -> "2 pares" / "último par"
+ *   - Fair Play y Yuth topan en 10 y 100 -> "10+ pares"
+ *   - Impulse y Marathon solo dicen sí/no -> "disponible"
+ */
+const stockText = (o) => {
+  if (!o.available) return 'agotado';
+  if (!o.stock_is_capped) return o.stock === 1 ? 'último par' : `${o.stock} pares`;
+  return o.stock > 1 ? `${o.stock}+ pares` : 'disponible';
+};
 
 let TAB = 'catalog';
 let FACETS = null;
@@ -242,8 +254,16 @@ async function renderCatalog(view) {
     offers.map((o) => {
       const badges = [];
       if (o.discount_pct) badges.push(`<span class="badge b-off">−${o.discount_pct}%</span>`);
-      if (o.is_all_time_low && o.observation_count > 1) badges.push('<span class="badge b-low">precio mínimo</span>');
-      if (o.stock === 1) badges.push('<span class="badge b-last">último par</span>');
+      // "Precio mínimo" solo dice algo si el precio de verdad se movió alguna vez:
+      // sin variación, todo estaría en su mínimo desde la primera extracción.
+      if (o.is_all_time_low && o.max_price_ever > o.min_price_ever) {
+        badges.push('<span class="badge b-low">precio mínimo</span>');
+      }
+      // "Último par" solo cuando la cantidad es exacta. En las tiendas que no
+      // publican cantidad el 1 significa "hay", no "queda uno".
+      if (o.stock === 1 && !o.stock_is_capped) {
+        badges.push('<span class="badge b-last">último par</span>');
+      }
       const rival = o.rival_best_price != null && o.rival_best_price < o.price
         ? `<div class="rival">↓ ${fmt(o.rival_best_price)} en ${esc(o.rival_store)}</div>` : '';
       return `<article class="card" data-sku="${o.sku_id}">

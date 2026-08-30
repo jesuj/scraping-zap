@@ -8,6 +8,19 @@ export interface StoreConfig {
   baseUrl: string;
   currency: string;
 
+  /**
+   * Ajustes de red propios de esta tienda, que pisan los globales.
+   * Necesario porque no todas responden igual: el GraphQL de Impulse tarda
+   * ~25 s con 50 productos por pagina y ~15 s con 20.
+   */
+  scrape?: Partial<{
+    pageSize: number;
+    requestTimeoutMs: number;
+    concurrency: number;
+    minDelayMs: number;
+    maxRetries: number;
+  }>;
+
   /** Fair Play, Yuth. Catalogo JSON publico. */
   vtex?: {
     sizeFieldName: string;

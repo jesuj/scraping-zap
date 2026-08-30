@@ -39,12 +39,16 @@ export async function runScrape(
     const startedAt = Date.now();
     const storeId = repo.upsertStore(storeConfig);
     const runId = repo.startRun(storeId);
+
+    // Los ajustes de la tienda pisan los globales: cada plataforma responde
+    // a un ritmo distinto y forzar un unico valor hace fallar a la mas lenta.
+    const tuning = { ...config.scrape, ...storeConfig.scrape };
     const http = new HttpClient({
       userAgent: config.scrape.userAgent,
-      timeoutMs: config.scrape.requestTimeoutMs,
-      maxRetries: config.scrape.maxRetries,
-      minDelayMs: config.scrape.minDelayMs,
-      concurrency: config.scrape.concurrency,
+      timeoutMs: tuning.requestTimeoutMs,
+      maxRetries: tuning.maxRetries,
+      minDelayMs: tuning.minDelayMs,
+      concurrency: tuning.concurrency,
     });
 
     const totals: RunTotals = {
@@ -59,7 +63,7 @@ export async function runScrape(
 
     try {
       const connector = createConnector(storeConfig, http, {
-        pageSize: config.scrape.pageSize,
+        pageSize: tuning.pageSize,
         targetSizes: config.targetSizes.labels,
       });
       const result: ScrapeResult = await connector.fetchFootwear((msg) => log(msg));

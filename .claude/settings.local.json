@@ -92,7 +92,21 @@
       "Bash(grep -oE 'https://taf\\\\.com\\\\.bo/marca/[a-z0-9-]+/' /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/taf_h.html)",
       "Bash(node --disable-warning=ExperimentalWarning dist/cli.js backup)",
       "Bash(node --disable-warning=ExperimentalWarning dist/cli.js)",
-      "Bash(node --disable-warning=ExperimentalWarning dist/cli.js report 10)"
+      "Bash(node --disable-warning=ExperimentalWarning dist/cli.js report 10)",
+      "Bash(echo \"=== Marathon ===\")",
+      "Bash(curl -sSL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/126 Safari/537.36' --max-time 25 -o /dev/null -w '  sin referer: http:%{http_code} type:%{content_type} bytes:%{size_download}\\\\n' https://media.marathon.store/products/h39/h0b/h00/11065529270302.jpg)",
+      "Bash(echo \"=== Impulse ===\")",
+      "Bash(curl -sSL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/126 Safari/537.36' --max-time 25 -o /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/imp.jpg -w '  http:%{http_code} type:%{content_type} bytes:%{size_download}\\\\n' https://www.impulse.bo/pub/media/catalog/product/cache/fc0516a589c6fbb35a05ada786389d69/3/9/392290-02_1.jpg)",
+      "Bash(echo \"=== Marathon con Referer de nuestra web \\(como lo manda el navegador\\) ===\")",
+      "Bash(curl -sSL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/126 Safari/537.36' -H 'Referer: http://127.0.0.1:4321/' -H 'Sec-Fetch-Dest: image' --max-time 25 -o /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/m1.jpg -w '  http:%{http_code} type:%{content_type} bytes:%{size_download}\\\\n' https://media.marathon.store/products/h39/h0b/h00/11065529270302.jpg)",
+      "Bash(file /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/m1.jpg)",
+      "Bash(curl -sS -H 'content-type: application/json' --max-time 40 -X POST https://impulse.bo/graphql -d '{\"query\":\"{products\\(filter:{sku:{eq:\\\\\"392290-02\\\\\"}}\\){items{name sku image{url label} small_image{url} thumbnail{url} media_gallery{url} ... on ConfigurableProduct{variants{product{sku image{url} media_gallery{url}}}}}}}\"}' -o /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/img.json -w 'http:%{http_code}\\\\n')",
+      "Bash(echo \"=== Marathon: simulando un navegador con la meta no-referrer \\(sin cabecera Referer\\) ===\")",
+      "Bash(curl -sSL -A 'Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 Chrome/126 Safari/537.36' -H 'Sec-Fetch-Dest: image' -H 'Sec-Fetch-Mode: no-cors' -H 'Sec-Fetch-Site: cross-site' --max-time 25 -o /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/mfix.jpg -w '  http:%{http_code} type:%{content_type} bytes:%{size_download}\\\\n' https://media.marathon.store/products/h39/h0b/h00/11065529270302.jpg)",
+      "Bash(file -b /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/mfix.jpg)",
+      "Bash(node -e \"console.log\\('  transformada:', 'https://www.impulse.bo/pub/media/catalog/product/cache/fc0516a589c6fbb35a05ada786389d69/2/5/254150-bkw.jpg'.replace\\(/\\\\/cache\\\\/[0-9a-f]{16,64}\\\\//i,'/'\\)\\)\")",
+      "Bash(curl -sSL -A Mozilla/5.0 --max-time 25 -o /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/ifix.jpg -w '  http:%{http_code} bytes:%{size_download}\\\\n' https://www.impulse.bo/pub/media/catalog/product/2/5/254150-bkw.jpg)",
+      "Bash(file -b /tmp/claude-1000/-home-jesuz-proyect-scraping-zap/abb894d5-722d-4610-a958-6773d0f8c2e2/scratchpad/ifix.jpg)"
     ]
   }
 }

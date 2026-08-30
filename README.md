@@ -231,6 +231,37 @@ no contra la forma de la respuesta de cada tienda.
 - **[Sport Line](https://sportlinebolivia.com/)** y **[Tienda Winner](https://tiendawinner.com/)**
   — API REST cerrada (401) y sin GraphQL. Requerirían parsear HTML sin datos estructurados.
 
+### Imágenes: dos trampas
+
+**Marathon bloquea el hotlinking.** Su CDN responde `403` cuando la petición lleva
+cabecera `Referer` de otro dominio, que es justo lo que manda el navegador al cargar
+una imagen desde nuestra web. Sin `Referer` sirve la foto normalmente. Se resuelve con
+`<meta name="referrer" content="no-referrer">` en la página.
+
+**Impulse devuelve el placeholder de Magento.** Su API entrega URLs de la forma
+`/pub/media/catalog/product/cache/<hash>/3/9/foto.jpg`, y esa ruta cacheada sirve el
+hexágono gris de Magento (la tienda no tiene generado ese tamaño). Quitando el tramo
+`/cache/<hash>/` aparece el archivo original. El conector lo hace al guardar, así que
+el dato queda correcto también en las exportaciones.
+
+### Velocidad por tienda
+
+No todas responden igual, así que cada una puede pisar los ajustes de red en
+`config/config.json`:
+
+```json
+"scrape": { "pageSize": 20, "requestTimeoutMs": 90000, "concurrency": 1, "minDelayMs": 800 }
+```
+
+**Impulse es la lenta**: su GraphQL tarda 15–25 s por página y responde `HTTP 507` si se
+lo apura. Con los valores globales (timeout de 30 s) fallaba de forma intermitente. Los
+valores conservadores de arriba tardan **~12 minutos** pero completan de forma fiable.
+No subas la concurrencia: es lo que dispara los 507.
+
+Una corrida completa queda entonces en ~15 minutos, casi todo esperando a Impulse. Las
+otras cuatro juntas tardan menos de 2. Si te molesta la espera, `"enabled": false` en
+Impulse la reduce a ese par de minutos, a cambio de perder unos 11 pares.
+
 ### Fragilidad de cada conector
 
 No todos envejecen igual, y conviene saberlo:

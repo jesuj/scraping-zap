@@ -23,8 +23,7 @@ import type {
 } from '../domain/types.js';
 import type { HttpClient } from '../infra/http.js';
 
-const PAGE_SIZE = 50;
-const MAX_PAGES = 60;
+const MAX_PAGES = 120;
 
 const QUERY = `query Catalogo($cat: String!, $page: Int!, $size: Int!) {
   products(filter: { category_id: { eq: $cat } }, pageSize: $size, currentPage: $page) {
@@ -101,7 +100,7 @@ export class MagentoConnector implements StoreConnector {
       for (let page = 1; page <= MAX_PAGES; page++) {
         const body = await this.#post(url, {
           query: QUERY,
-          variables: { cat: category.id, page, size: PAGE_SIZE },
+          variables: { cat: category.id, page, size: this.#opts.pageSize },
         });
 
         if (body.errors?.length) {
@@ -122,7 +121,7 @@ export class MagentoConnector implements StoreConnector {
         fetched += items.length;
         onProgress?.(`  ${this.store.slug} · ${category.label}: ${fetched} productos`);
 
-        if (items.length < PAGE_SIZE) break;
+        if (items.length < this.#opts.pageSize) break;
       }
     }
 
@@ -159,7 +158,7 @@ export class MagentoConnector implements StoreConnector {
         externalId: child.sku,
         sizeLabel: String(sizeLabel).trim(),
         ean: null,
-        imageUrl: raw.image?.url ?? null,
+        imageUrl: stripMagentoCache(raw.image?.url),
         url,
         offer: {
           price: price(child.price_range) ?? price(raw.price_range),
@@ -186,10 +185,27 @@ export class MagentoConnector implements StoreConnector {
       sport: null,
       categoryPath: null,
       url,
-      imageUrl: raw.image?.url ?? null,
+      imageUrl: stripMagentoCache(raw.image?.url),
       skus,
     };
   }
+}
+
+/**
+ * Magento sirve las imagenes desde una ruta cacheada:
+ *
+ *   /pub/media/catalog/product/cache/<hash32>/3/9/392290-02_1.jpg
+ *
+ * Esa variante devuelve el placeholder gris de Magento (la tienda no tiene
+ * generado el tamano que pide ese hash). Quitando el tramo `/cache/<hash>/`
+ * queda la ruta del archivo original, que si existe.
+ *
+ * Contrapartida: la original pesa mas (~100 KB contra ~2 KB). La grilla carga
+ * con `loading="lazy"`, asi que solo se descargan las que se ven.
+ */
+function stripMagentoCache(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.replace(/\/cache\/[0-9a-f]{16,64}\//i, '/');
 }
 
 function price(range?: PriceRange): number | null {
