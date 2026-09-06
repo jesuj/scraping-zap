@@ -17,6 +17,7 @@ import { loadConfig, DEFAULT_DB_PATH, PROJECT_ROOT } from './config.js';
 import { openDatabase } from './infra/db.js';
 import { Repository } from './repo/repositories.js';
 import { runScrape } from './pipeline/ingest.js';
+import { buildStaticSite } from './pipeline/staticBuild.js';
 import { startServer } from './web/server.js';
 import {
   crossStoreComparison,
@@ -194,6 +195,19 @@ switch (command) {
     console.log(`Exportado a ${dir}/`);
     console.log(`  zapatillas.json  ${offers.length} SKUs (${inStock.length} con stock) + comparaciones + procedencia`);
     console.log(`  zapatillas.csv   ${offers.length} filas, abrible en Excel`);
+    break;
+  }
+
+  case 'publish': {
+    // Genera el sitio estatico en docs/, que es de donde GitHub Pages publica.
+    const outDir = process.argv[3] ?? join(PROJECT_ROOT, 'docs');
+    const result = buildStaticSite(db, config, outDir);
+    const kb = (n: number): string => `${(n / 1024).toFixed(0)} KB`;
+    console.log(`\nSitio estatico generado en ${result.outDir}`);
+    console.log(`  ${result.offers} ofertas vigentes · ${result.historyPoints} puntos de historial`);
+    console.log(`  data.json: ${kb(result.bytes)} (GitHub Pages lo sirve comprimido, ~10x menos)`);
+    console.log(`\nPara publicarlo:`);
+    console.log(`  git add docs && git commit -m "datos: $(date +%F)" && git push`);
     break;
   }
 

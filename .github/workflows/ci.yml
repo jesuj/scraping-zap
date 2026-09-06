@@ -1,0 +1,32 @@
+# Validacion en cada push: que compile y que el sitio publicado sea coherente.
+#
+# A proposito NO se ejecuta el scraper aca. Las cinco tiendas son bolivianas y
+# GitHub Actions corre desde datacenters de EE.UU.: Impulse ya devuelve HTTP 507
+# cuando se lo apura, y no sabemos como responden las demas a una IP asi.
+# El scraper corre en la maquina local y este workflow solo verifica el resultado.
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Compilar y comprobar tipos
+        run: npm run build
+
+      - name: Validar el sitio publicado
+        run: node scripts/check-site.mjs

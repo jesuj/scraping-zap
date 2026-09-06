@@ -10,6 +10,9 @@
     "build": "tsc && node scripts/copy-assets.mjs",
     "scrape": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js scrape",
     "serve": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js serve",
+    "publish:site": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js publish && node scripts/check-site.mjs",
+    "check": "node scripts/check-site.mjs",
+    "backup": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js backup",
     "report": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js report",
     "compare": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js compare",
     "runs": "npm run build && node --disable-warning=ExperimentalWarning dist/cli.js runs"

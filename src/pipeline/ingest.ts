@@ -57,6 +57,7 @@ export async function runScrape(
       skusTargetSize: 0,
       skusInStock: 0,
       priceChanges: 0,
+      retired: 0,
     };
 
     log(`→ ${storeConfig.name} (${storeConfig.platform}) · corrida #${runId}`);
@@ -89,6 +90,12 @@ export async function runScrape(
             if (repo.recordOffer(skuId, runId, sku.offer, observedAt)) totals.priceChanges++;
           }
         }
+
+        // Lo que ya no figura en el catalogo se da por agotado. Se exige haber
+        // visto productos: una respuesta vacia es una falla, no una liquidacion.
+        if (totals.skusTargetSize > 0) {
+          totals.retired = repo.retireUnseen(storeId, runId, observedAt);
+        }
       });
 
       const durationMs = Date.now() - startedAt;
@@ -104,6 +111,7 @@ export async function runScrape(
         `  ✓ ${storeConfig.slug}: ${totals.productsFound} productos · ` +
           `${totals.skusTargetSize} SKUs en talla objetivo · ` +
           `${totals.skusInStock} con stock · ${totals.priceChanges} cambios · ` +
+          (totals.retired ? `${totals.retired} dados de baja · ` : '') +
           `${http.requestCount} peticiones · ${(durationMs / 1000).toFixed(1)}s`,
       );
 

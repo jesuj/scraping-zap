@@ -199,6 +199,110 @@ const stockText = (o) => {
 let TAB = 'catalog';
 let FACETS = null;
 
+/**
+ * Capa de datos con dos modos, para no mantener dos interfaces:
+ *
+ *   servidor  →  hay un Node corriendo (npm run serve): consulta /api/*
+ *   estatico  →  GitHub Pages: carga data.json una vez y filtra en el navegador
+ *
+ * Se decide sola al arrancar probando /api/stats. Las dos vías devuelven las
+ * mismas formas, así que el resto del código no sabe en cuál está.
+ */
+const DATA = {
+  mode: null,
+  db: null,
+
+  async init() {
+    try {
+      const res = await fetch('api/stats', { cache: 'no-store' });
+      if (!res.ok) throw new Error('sin API');
+      this.mode = 'server';
+      return;
+    } catch {
+      const res = await fetch('data.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('No se encontró data.json ni una API activa.');
+      this.db = await res.json();
+      this.mode = 'static';
+    }
+  },
+
+  async stats() {
+    if (this.mode === 'server') return (await fetch('api/stats')).json();
+    return { ...this.db.stats, targetSizes: this.db.targetSizes, last_run: this.db.stats.last_run };
+  },
+
+  async facets() {
+    if (this.mode === 'server') return (await fetch('api/facets')).json();
+    return this.db.facets;
+  },
+
+  async offers(params) {
+    if (this.mode === 'server') return (await fetch('api/offers?' + params)).json();
+    return { offers: filterSort(this.db.offers, params) };
+  },
+
+  async compare(mode) {
+    if (this.mode === 'server') return (await fetch('api/compare?mode=' + mode)).json();
+    return { mode, comparisons: this.db.compare[mode] ?? [] };
+  },
+
+  async drops() {
+    if (this.mode === 'server') return (await fetch('api/drops?hours=720')).json();
+    return { drops: this.db.drops };
+  },
+
+  async runs() {
+    if (this.mode === 'server') return (await fetch('api/runs')).json();
+    return { runs: this.db.runs };
+  },
+
+  async sku(id) {
+    if (this.mode === 'server') return (await fetch('api/sku/' + id)).json();
+    const offer = this.db.offers.find((o) => String(o.sku_id) === String(id));
+    if (!offer) throw new Error('SKU no encontrado');
+    const run = this.db.runs.find((r) => r.id === offer.run_id);
+    let endpoints = [];
+    try { endpoints = JSON.parse(run?.endpoints || '[]'); } catch { endpoints = []; }
+    return { ...offer, endpoints, history: this.db.history[offer.sku_id] ?? [] };
+  },
+};
+
+/** Réplica en JS del filtrado y orden que en modo servidor hace SQL. */
+function filterSort(rows, params) {
+  const q = new URLSearchParams(params);
+  const text = (q.get('q') || '').toLowerCase();
+  const sizes = (q.get('sizes') || '').split(',').filter(Boolean);
+  const maxPrice = q.get('maxPrice') ? Number(q.get('maxPrice')) : null;
+
+  let out = rows.filter((o) => {
+    if (q.get('store') && o.store_slug !== q.get('store')) return false;
+    if (q.get('brand') && o.brand !== q.get('brand')) return false;
+    if (sizes.length && !sizes.includes(o.size_label)) return false;
+    if (maxPrice !== null && !(o.price <= maxPrice)) return false;
+    if (q.get('discounted') === '1' && !(o.list_price > o.price)) return false;
+    if (text) {
+      const hay = `${o.product_name} ${o.brand ?? ''} ${o.ref_code ?? ''}`.toLowerCase();
+      if (!hay.includes(text)) return false;
+    }
+    return true;
+  });
+
+  // `nulls last` en los campos que pueden faltar, igual que en el SQL.
+  const num = (v, fallback) => (v === null || v === undefined ? fallback : v);
+  const SORTS = {
+    price_asc: (a, b) => num(a.price, Infinity) - num(b.price, Infinity),
+    price_desc: (a, b) => num(b.price, -Infinity) - num(a.price, -Infinity),
+    discount: (a, b) => num(b.discount_pct, -Infinity) - num(a.discount_pct, -Infinity),
+    drop: (a, b) => num(a.change_pct, Infinity) - num(b.change_pct, Infinity),
+    stock: (a, b) => a.stock - b.stock,
+    brand: (a, b) => (a.brand ?? '').localeCompare(b.brand ?? '') || a.product_name.localeCompare(b.product_name),
+    name: (a, b) => a.product_name.localeCompare(b.product_name),
+    recent: (a, b) => String(b.sku_first_seen_at).localeCompare(String(a.sku_first_seen_at)),
+  };
+  out.sort(SORTS[q.get('sort')] ?? SORTS.price_asc);
+  return out.slice(0, Number(q.get('limit') || 1000));
+}
+
 function params() {
   const p = new URLSearchParams();
   if ($('q').value) p.set('q', $('q').value);
@@ -214,9 +318,19 @@ function params() {
 }
 
 async function loadStats() {
-  const s = await (await fetch('/api/stats')).json();
+  const s = await DATA.stats();
   $('subtitle').textContent =
-    `Tallas US ${s.targetSizes.labels.join(' · ')} — pie de ${s.targetSizes.footLengthCm} cm · última extracción ${when(s.last_run)}`;
+    `Tallas US ${s.targetSizes.labels.join(' · ')} — pie de ${s.targetSizes.footLengthCm} cm` +
+    ` · última extracción ${when(s.last_run)}`;
+
+  // El sitio estático es una foto: solo trae lo que tenía stock al publicarse,
+  // así que el filtro de stock no tiene nada que alternar.
+  if (DATA.mode === 'static') {
+    const chk = $('inStock');
+    chk.checked = true;
+    chk.disabled = true;
+    chk.closest('.chk').title = 'La versión publicada solo incluye lo que tenía stock';
+  }
   $('stats').innerHTML = [
     ['Con stock', s.in_stock], ['SKUs seguidos', s.total_skus],
     ['Modelos', s.products], ['En 2 tiendas', s.matched_groups],
@@ -225,7 +339,7 @@ async function loadStats() {
 }
 
 async function loadFacets() {
-  FACETS = await (await fetch('/api/facets')).json();
+  FACETS = await DATA.facets();
   const fill = (el, items, label) => {
     el.innerHTML = `<option value="">${label}</option>` +
       items.map((i) => `<option value="${esc(i.value)}">${esc(i.label ?? i.value)} (${i.count})</option>`).join('');
@@ -247,7 +361,7 @@ async function render() {
 }
 
 async function renderCatalog(view) {
-  const { offers } = await (await fetch('/api/offers?' + params())).json();
+  const { offers } = await DATA.offers(params());
   if (!offers.length) return void (view.innerHTML = '<div class="empty">Nada coincide con estos filtros.</div>');
 
   view.innerHTML = `<div class="sub" style="margin-bottom:10px">${offers.length} resultados</div><div class="grid">` +
@@ -291,7 +405,7 @@ async function renderCatalog(view) {
 let COMPARE_MODE = 'exact';
 
 async function renderCompare(view) {
-  const { comparisons } = await (await fetch('/api/compare?mode=' + COMPARE_MODE)).json();
+  const { comparisons } = await DATA.compare(COMPARE_MODE);
 
   const toggle = `<div class="filters" style="margin-bottom:12px">
       <select id="cmode">
@@ -333,7 +447,7 @@ async function renderCompare(view) {
 }
 
 async function renderDrops(view) {
-  const { drops } = await (await fetch('/api/drops?hours=720')).json();
+  const { drops } = await DATA.drops();
   if (!drops.length) {
     return void (view.innerHTML = '<div class="empty">Sin bajadas registradas todavía.<br><span class="sub">Necesitás al menos dos extracciones para comparar contra el pasado.</span></div>');
   }
@@ -351,7 +465,7 @@ async function renderDrops(view) {
 }
 
 async function renderRuns(view) {
-  const { runs } = await (await fetch('/api/runs')).json();
+  const { runs } = await DATA.runs();
   view.innerHTML = `<div class="sub" style="margin-bottom:10px">Cada fila es una extracción. De acá sale la trazabilidad: qué tienda, cuándo, cuántas peticiones y contra qué endpoints.</div>
     <div class="wrap"><table><thead><tr>
       <th>#</th><th>Tienda</th><th>Inicio</th><th>Estado</th><th class="num">Peticiones</th>
@@ -399,7 +513,7 @@ function sparkline(history) {
 }
 
 async function openDetail(skuId) {
-  const d = await (await fetch('/api/sku/' + skuId)).json();
+  const d = await DATA.sku(skuId);
   $('detail').innerHTML = `
     <div class="brand">${esc(d.brand ?? '')}</div>
     <h2 style="margin:2px 0 6px;font-size:19px">${esc(d.product_name)}</h2>
@@ -462,9 +576,15 @@ $('close').addEventListener('click', closeDetail);
 $('scrim').addEventListener('click', closeDetail);
 document.addEventListener('keydown', (e) => e.key === 'Escape' && closeDetail());
 
-loadStats().then(loadFacets).then(render).catch((err) => {
-  $('view').innerHTML = `<div class="empty">No se pudo cargar: ${esc(err.message)}<br><span class="sub">¿Corriste <code>npm run scrape</code> al menos una vez?</span></div>`;
-});
+DATA.init()
+  .then(loadStats)
+  .then(loadFacets)
+  .then(render)
+  .catch((err) => {
+    $('view').innerHTML = `<div class="empty">No se pudo cargar: ${esc(err.message)}
+      <br><span class="sub">Con servidor local, corré <code>npm run scrape</code> y luego <code>npm run serve</code>.
+      Como sitio estático, hace falta <code>data.json</code> junto al HTML.</span></div>`;
+  });
 </script>
 </body>
 </html>

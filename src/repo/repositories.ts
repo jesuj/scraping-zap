@@ -14,6 +14,8 @@ export interface RunTotals {
   skusTargetSize: number;
   skusInStock: number;
   priceChanges: number;
+  /** SKUs dados de baja por desaparecer del catalogo. */
+  retired: number;
 }
 
 export class Repository {
@@ -284,6 +286,58 @@ export class Repository {
       );
 
     return changed;
+  }
+
+  /**
+   * Da de baja los SKUs que dejaron de aparecer en el catalogo.
+   *
+   * Sin esto, un SKU que se agota y desaparece del listado conserva para
+   * siempre su ultimo estado conocido: la web seguiria ofreciendo zapatos que
+   * ya no existen. Desaparecer del catalogo es, a efectos practicos, agotarse.
+   *
+   * La transicion se registra en `price_point` para que el historial pueda
+   * responder "cuando dejo de estar disponible".
+   *
+   * Solo debe llamarse tras una corrida EXITOSA: si la tienda fallo a mitad de
+   * camino, los SKUs que faltan son un error de red, no bajas reales.
+   *
+   * @returns cuantos SKUs se dieron de baja.
+   */
+  retireUnseen(storeId: number, runId: number, observedAt: string): number {
+    const stale = this.#db
+      .prepare(
+        `SELECT ss.sku_id
+         FROM sku_state ss
+         JOIN sku s     ON s.id = ss.sku_id
+         JOIN product p ON p.id = s.product_id
+         WHERE p.store_id = ? AND ss.last_run_id != ? AND ss.available = 1`,
+      )
+      .all(storeId, runId) as Array<{ sku_id: number }>;
+
+    for (const { sku_id } of stale) {
+      this.#db
+        .prepare(
+          `INSERT INTO price_point (
+             sku_id, run_id, observed_at, price, list_price, available, stock,
+             stock_is_capped, seller
+           )
+           SELECT ?, ?, ?, price, list_price, 0, 0, 0, seller
+           FROM sku_state WHERE sku_id = ?`,
+        )
+        .run(sku_id, runId, observedAt, sku_id);
+
+      this.#db
+        .prepare(
+          `UPDATE sku_state
+           SET available = 0, stock = 0, stock_is_capped = 0,
+               last_run_id = ?, observed_at = ?,
+               observation_count = observation_count + 1
+           WHERE sku_id = ?`,
+        )
+        .run(runId, observedAt, sku_id);
+    }
+
+    return stale.length;
   }
 
   transaction<T>(fn: () => T): T {

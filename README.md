@@ -106,6 +106,64 @@ Si querés los datos en archivos planos, `export` genera:
 - `export/zapatillas.json` — todo, incluida la procedencia
 - `export/zapatillas.csv` — abrible en Excel (lleva BOM para los acentos)
 
+## Publicar en GitHub Pages
+
+El scraper corre **en tu máquina** y solo se publica la foto vigente. Dos motivos:
+
+- Las tiendas se consultan desde tu conexión en Bolivia. GitHub Actions corre desde
+  datacenters de EE.UU. y no sabemos cómo responderían — Impulse ya devuelve `507`
+  cuando se lo apura.
+- El historial completo se queda en tu disco. Si commitearas la base SQLite, git
+  guardaría los 3 MB **enteros** en cada commit (no diffea binarios): ~1 GB al año.
+
+El flujo son tres pasos:
+
+```bash
+npm run scrape         # 1. actualiza la base local (cron o a mano)
+npm run publish:site   # 2. genera docs/ y valida el resultado
+git add docs && git commit -m "datos: $(date +%F)" && git push
+```
+
+Y una única vez, en GitHub: **Settings → Pages → Source: Deploy from a branch →
+rama `main`, carpeta `/docs`**. Queda en `https://jesuj.github.io/scraping-zap/`.
+
+### Qué se publica
+
+Solo lo que **tiene stock**, más el historial de precios de esos SKUs y la
+trazabilidad de las últimas 20 extracciones. Nada de lo agotado: al visitante no le
+sirve, y mantiene el archivo chico.
+
+```
+561 ofertas vigentes · 719 puntos de historial
+data.json: 779 KB  →  54 KB comprimido (GitHub Pages sirve con gzip)
+```
+
+### Una sola interfaz, dos modos
+
+`docs/index.html` es **el mismo archivo** que usa el servidor local. Al arrancar
+prueba `api/stats`: si responde, consulta la API; si da 404, carga `data.json` y
+filtra en el navegador. No hay dos versiones que mantener sincronizadas.
+
+En modo estático el filtro "solo con stock" aparece deshabilitado, porque lo
+publicado ya es solo eso.
+
+### Antes de publicar
+
+`npm run publish:site` valida el resultado y falla si algo no cuadra: faltan
+archivos, el JSON no trae las claves que la interfaz lee, hay ofertas sin stock o
+fuera de tus tallas. También avisa si los datos tienen más de 7 días.
+
+El workflow de CI (`.github/workflows/ci.yml`) repite esa validación en cada push.
+**No ejecuta el scraper** a propósito, por la razón de arriba.
+
+### Lo que conviene tener en cuenta
+
+- Las imágenes se cargan desde los CDN de las tiendas, así que un sitio público
+  consume su ancho de banda.
+- GitHub Pages en cuenta gratuita es siempre público: pasás de una herramienta
+  personal a publicar precios de cinco tiendas con nombre. Son datos públicos, pero
+  es un cambio de naturaleza. Si preferís evitarlo, dejalo local con `npm run serve`.
+
 ## Cómo funciona el historial de precios
 
 `price_point` recibe una fila **solo cuando algo cambia** (precio, precio de lista,
@@ -118,6 +176,14 @@ una consulta directa en vez de un diff sobre millones de filas.
 La tabla `sku_state` mantiene el estado actual denormalizado (precio anterior, mínimo
 y máximo histórico, número de observaciones) para que la web no tenga que recorrer el
 historial en cada carga.
+
+**Los SKUs que desaparecen del catálogo se dan de baja.** Si un zapato se agota y la
+tienda lo saca del listado, deja de aparecer en la extracción. Sin tratamiento, su
+último estado conocido ("con stock") quedaría congelado para siempre y seguirías
+viendo zapatos que ya no existen — en una revisión aparecieron 178 así, el 24% de lo
+que figuraba disponible. Tras cada corrida exitosa, todo SKU de esa tienda que no
+apareció se marca agotado, y la transición queda en el historial. Solo se hace si la
+corrida devolvió productos: una respuesta vacía es una falla, no una liquidación.
 
 **Para que el historial sirva, el scraper tiene que correr periódicamente.** Una entrada
 de cron diaria:
